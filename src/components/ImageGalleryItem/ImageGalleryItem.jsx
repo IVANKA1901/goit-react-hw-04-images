@@ -1,36 +1,61 @@
-import React, { Component } from 'react';
+import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import { Modal } from '../Modal/Modal';
 import css from './ImageGalleryItem.module.css';
 
-export class ImageGalleryItem extends Component {
-  state = {
-    isModalOpen: false,
+export function ImageGalleryItem({ webformatUrl, tags, largeImageUrl }) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleToggleModal = () => {
+    setIsModalOpen(prevState => !prevState);
   };
 
-  handleToggleModal = () => {
-    this.setState(prevState => ({ isModalOpen: !prevState.isModalOpen }));
-  };
+  return (
+    <li className={css.imageGalleryItem}>
+      <img
+        className={css.imageGalleryItemImage}
+        src={webformatUrl}
+        alt={tags}
+        onClick={handleToggleModal}
+      />
 
-  render() {
-    return (
-      <li className={css.imageGalleryItem}>
-        <img
-          className={css.imageGalleryItemImage}
-          src={this.props.webformatUrl}
-          alt={this.props.tags}
-          onClick={this.handleToggleModal}
-        />
-
-        {this.state.isModalOpen && (
-          <Modal onCloseModal={this.handleToggleModal}>
-            <img src={this.props.largeImageUrl} alt={this.props.tags} />
-          </Modal>
-        )}
-      </li>
-    );
-  }
+      {isModalOpen && (
+        <Modal onCloseModal={handleToggleModal}>
+          <img src={largeImageUrl} alt={tags} />
+        </Modal>
+      )}
+    </li>
+  );
 }
+
+// export class ImageGalleryItem extends Component {
+//   state = {
+//     isModalOpen: false,
+//   };
+
+//   handleToggleModal = () => {
+//     this.setState(prevState => ({ isModalOpen: !prevState.isModalOpen }));
+//   };
+
+//   render() {
+//     return (
+//       <li className={css.imageGalleryItem}>
+//         <img
+//           className={css.imageGalleryItemImage}
+//           src={this.props.webformatUrl}
+//           alt={this.props.tags}
+//           onClick={this.handleToggleModal}
+//         />
+
+//         {this.state.isModalOpen && (
+//           <Modal onCloseModal={this.handleToggleModal}>
+//             <img src={this.props.largeImageUrl} alt={this.props.tags} />
+//           </Modal>
+//         )}
+//       </li>
+//     );
+//   }
+// }
 
 ImageGalleryItem.propTypes = {
   webformatUrl: PropTypes.string.isRequired,
