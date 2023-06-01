@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { useEffect, useState } from 'react';
 import { api } from './services/api';
 import { ImageGallery } from './ImageGallery/ImageGallery';
 import { Container } from './Container/Container';
@@ -16,101 +16,72 @@ const STATUS = {
   REJECTED: 'rejected',
 };
 
-export class App extends Component {
-  state = {
-    page: 1,
-    search: '',
-    images: [],
-    error: null,
-    status: STATUS.IDLE,
-    totalImages: null,
-  };
+export function App() {
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState('');
 
-  componentDidUpdate(_, prevState) {
-    const { page, search } = this.state;
+  const [images, setImages] = useState([]);
+  const [error, setError] = useState(null);
 
-    if (prevState.page !== page || prevState.search !== search) {
-      this.setState({ status: STATUS.PENDING });
+  const [status, setStatus] = useState(STATUS.IDLE);
+  const [totalImages, setTotalImages] = useState(null);
+
+  useEffect(() => {
+    if (!search) {
+      return;
     }
+    setStatus(STATUS.PENDING);
 
     api
       .fetchImages(search, page)
       .then(({ data }) => {
-        if (prevState.page !== page) {
-          this.setState(prevState => ({
-            images: [...prevState.images, ...data.hits],
-            status: STATUS.RESOLVED,
-            totalImages: data.total,
-          }));
-        }
+        if (data.hits <= 0) {
+          setError('not found');
+          setStatus(STATUS.REJECTED);
 
-        if (prevState.search !== search) {
-          if (data.hits <= 0) {
-            this.setState({
-              error: 'not found',
-              status: STATUS.REJECTED,
-            });
-
-            return;
-          } else {
-            toast.info(`Im search ${data.total} images`);
-          }
-
-          this.setState({
-            images: data.hits,
-            status: STATUS.RESOLVED,
-            totalImages: data.total,
-          });
+          return;
+        } else {
+          setImages(prevState =>
+            page > 1 ? [...prevState, ...data.hits] : data.hits
+          );
+          setStatus(STATUS.RESOLVED);
+          setTotalImages(data.total);
+          toast.info(`Im search ${data.total} images`);
         }
       })
-      .catch(error =>
-        this.setState({
-          error: error.message,
-          status: STATUS.REJECTED,
-        })
-      );
-  }
+      .catch(error => setError(error.message), setStatus(STATUS.REJECTED));
+  }, [page, search]);
 
-  handleFormSubmit = search => {
-    this.setState({
-      search,
-      image: [],
-      page: 1,
-    });
+  const handleLoadMoreClick = () => {
+    setPage(prevState => prevState + 1);
   };
 
-  handleLoadMoreClick = () => {
-    this.setState(prevState => ({ page: prevState.page + 1 }));
+  const handleFormSubmit = search => {
+    setSearch(search);
+    setImages([]);
+    setPage(1);
   };
 
-  render() {
-    const { images, status, error, page, totalImages } = this.state;
+  const isShownButton = page * 12 < totalImages ? true : false;
 
-    const isShownButton = page * 12 < totalImages ? true : false;
-
-    return (
-      <Container>
-        <div className={css.box}>
-          <SearchBar onSubmit={this.handleFormSubmit} />
-
-          {images.length > 0 && <ImageGallery images={images} />}
-
-          {status === 'pending' && <Loader />}
-
-          {status === 'resolved' && isShownButton && (
-            <Button onClick={this.handleLoadMoreClick} />
-          )}
-
-          {status === 'rejected' && (
-            <>
-              <p className={css.error}>
-                Error message: <span className={css.errorMessage}>{error}</span>
-              </p>
-            </>
-          )}
-          <ToastContainer autoClose={4000} theme="dark" />
-        </div>
-      </Container>
-    );
-  }
+  return (
+    <Container>
+      <div className={css.box}>
+        <SearchBar onSubmit={handleFormSubmit} />
+        {images.length > 0 && <ImageGallery images={images} />}
+        {status === 'pending' && <Loader />}
+        {status === 'resolved' && isShownButton && (
+          <Button onClick={handleLoadMoreClick} />
+        )}
+        {status === 'rejected' && (
+          <>
+            <p className={css.error}>
+              Error message: <span className={css.errorMessage}>{error}</span>
+            </p>
+          </>
+        )}
+        <ToastContainer autoClose={4000} theme="dark" />
+      </div>
+    </Container>
+  );
 }
